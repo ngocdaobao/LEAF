@@ -1,0 +1,9 @@
+numpy
+scikit-learn
+pandas
+torch
+transformers
+peft
+wandb
+loguru
+optuna
