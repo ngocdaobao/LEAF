@@ -5,9 +5,9 @@ import os
 import torch.multiprocessing as mp
 
 if __name__ == "__main__":
-    args = parse_arguments(key='91f6b895fd6f5fcbf66ed4ca741eb048dd6de262')
+    args = parse_arguments()
     
-    wandb.login()
+    wandb.login(key='91f6b895fd6f5fcbf66ed4ca741eb048dd6de262')
         
     if args.parallel == 'DDP':
         os.environ["MASTER_ADDR"] = "localhost"
