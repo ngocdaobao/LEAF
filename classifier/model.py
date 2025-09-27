@@ -209,8 +209,7 @@ class BertED(nn.Module):
         num_heads = self.backbone.config.num_attention_heads
         return_dict = {}
 
-        #if not self.uniform_expert:
-        if True:
+        if not self.uniform_expert:
             with torch.no_grad():
                 with self.backbone.disable_adapter():
                     base_output = self.backbone(x, attention_mask=masks, return_dict=True)
@@ -282,7 +281,7 @@ class BertED(nn.Module):
                 batch_idx = indices[:, 0]
                 token_idx = indices[:, 1]
 
-                selected_x = x[batch_idx, token_idx, :]      # (num_selected, H)
+                selected_x = x[batch_idx, token_idx]      # (num_selected, H)
                 selected_masks = masks[batch_idx, token_idx] # (num_selected,)
                 selected_weights = weights[batch_idx, token_idx] # (num_selected,)
 
