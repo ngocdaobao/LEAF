@@ -225,6 +225,7 @@ class BertED(nn.Module):
 
             gating_weights = self.softmax(gating_logits)
             topk_weights, topk_indices = torch.topk(gating_weights, self.top_k, dim=-1)  # (B, k), (B, k)
+            
 
 
             if train:
@@ -241,32 +242,63 @@ class BertED(nn.Module):
                            for _ in range(self.top_k)]
         num_choose = [0] * self.num_experts
         for k in range(self.top_k):
-            expert_ids = topk_indices[:, k]  # (B,)
-            weights = topk_weights[:, k]     # (B,)
+            expert_ids = topk_indices[:,:, k]  # (B,), (B,L,) if token-level
+            weights = topk_weights[:,:, k]     # (B,), (B,L,) if token-level
 
-            for expert_id in expert_ids.unique():
-                mask = (expert_ids == expert_id)
-                if mask.sum() == 0:
+        #     for expert_id in expert_ids.unique():
+        #         mask = (expert_ids == expert_id)
+        #         if mask.sum() == 0:
+        #             continue
+        #         else:
+        #             num_choose[expert_id.item()] +=  mask.sum().item()
+
+        #         self.set_adapter(f"expert_{expert_id.item()}")
+        #         out = self.backbone(
+        #             x[mask], attention_mask=masks[mask], output_attentions=True
+        #         )                
+        #         _ = out.last_hidden_state  # (N, T, H)
+        #         attn_expert = out.attentions[-1]  # (N, T, H)
+                
+
+        #         weighted = weights[mask].view(-1, 1, 1) * _
+        #         expert_outputs[k][mask] = weighted
+                
+        #         w_attn = weights[mask].view(-1, 1, 1, 1)         # (N,1,1,1)
+        #         expert_outputs_attn[k][mask] = w_attn * attn_expert
+
+        # x_out = sum(expert_outputs)
+        # total_attention = sum(expert_outputs_attn)
+
+        # Token-level MoLE
+            for expert_id in range(self.num_experts):
+                mask = (expert_ids == expert_id)  # (B, L) bool
+                num_selected = mask.sum().item()
+                if num_selected == 0:
                     continue
-                else:
-                    num_choose[expert_id.item()] +=  mask.sum().item()
+                num_choose[expert_id] += num_selected
 
-                self.set_adapter(f"expert_{expert_id.item()}")
+                indices = torch.nonzero(mask, as_tuple=False)  # (num_selected, 2)
+                batch_idx = indices[:, 0]
+                token_idx = indices[:, 1]
+
+                selected_x = x[batch_idx, token_idx, :]      # (num_selected, H)
+                selected_masks = masks[batch_idx, token_idx] # (num_selected,)
+                selected_weights = weights[batch_idx, token_idx] # (num_selected,)
+
+                self.set_adapter(f"expert_{expert_id}")
+                selected_x = selected_x.unsqueeze(1)      # (num_selected, 1, H)
+                selected_masks = selected_masks.unsqueeze(1) # (num_selected, 1)
+
                 out = self.backbone(
-                    x[mask], attention_mask=masks[mask], output_attentions=True
-                )                
-                _ = out.last_hidden_state  # (N, T, H)
-                attn_expert = out.attentions[-1]  # (N, T, H)
-                
+                    selected_x, attention_mask=selected_masks, output_attentions=True
+                )
+                _ = out.last_hidden_state  # (num_selected, 1, H)
+                attn_expert = out.attentions[-1]  # (num_selected, 1, H)
 
-                weighted = weights[mask].view(-1, 1, 1) * _
-                expert_outputs[k][mask] = weighted
-                
-                w_attn = weights[mask].view(-1, 1, 1, 1)         # (N,1,1,1)
-                expert_outputs_attn[k][mask] = w_attn * attn_expert
+                expert_outputs[k][batch_idx, token_idx, :] = selected_weights.unsqueeze(-1) * _.squeeze(1)
+                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.unsqueeze(-1).unsqueeze(-1) * attn_expert.squeeze(1)
 
-        x_out = sum(expert_outputs)
-        total_attention = sum(expert_outputs_attn)
+
 
         # Optional: add general expert
         if self.use_general_expert:
