@@ -213,12 +213,21 @@ class BertED(nn.Module):
             with torch.no_grad():
                 with self.backbone.disable_adapter():
                     base_output = self.backbone(x, attention_mask=masks, return_dict=True)
+                    # Instance-level: use [CLS]
                     cls_embedding = base_output.last_hidden_state[:, 0, :]  # (B, H)
+                    # If token-level, use base_output (B, L, H)
+
 
             # Gating
-            gating_logits = self.gating_layer(cls_embedding)  # (B, E)
+           #gating_logits = self.gating_layer(cls_embedding)  (B, E)
+            # Gating for token-level selection
+            gating_logits = self.gating_layer(base_output)
+
+
             gating_weights = self.softmax(gating_logits)
             topk_weights, topk_indices = torch.topk(gating_weights, self.top_k, dim=-1)  # (B, k), (B, k)
+
+
             if train:
                 avg_weights = gating_weights.mean(dim=0)
                 uniform = torch.full_like(avg_weights, 1.0 / self.num_experts)
