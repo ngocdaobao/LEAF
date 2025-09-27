@@ -217,11 +217,10 @@ class BertED(nn.Module):
                     cls_embedding = base_output.last_hidden_state[:, 0, :]  # (B, H)
                     # If token-level, use base_output (B, L, H)
 
-
             # Gating
            #gating_logits = self.gating_layer(cls_embedding)  (B, E)
             # Gating for token-level selection
-            gating_logits = self.gating_layer(base_output)
+            gating_logits = self.gating_layer(base_output.last_hidden_state)  # (B, L, E)
 
 
             gating_weights = self.softmax(gating_logits)
