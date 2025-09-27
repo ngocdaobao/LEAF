@@ -169,7 +169,7 @@ class BertED(nn.Module):
                 param.requires_grad = True
         # logger.info("Unfreeze LoRA parameters")
         
-    def turn_uniform_expert(self, turn_on=True):
+    def turn_uniform_expert(self, turn_on=False):
         if self.uniform_expert != turn_on:
             self.uniform_expert = turn_on
             logger.info(f"Uniform expert: {turn_on}")
