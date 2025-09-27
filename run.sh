@@ -36,7 +36,7 @@ do
                 --use_description \
                 --num_description 3 \
                 --ratio_loss_des_cl 0.1 \
-                --uniform_ep 1 \
+                --uniform_ep 0 \
                 --skip_eval_ep 0 \
                 --patience 4 \
                 --lora_rank 64 \
