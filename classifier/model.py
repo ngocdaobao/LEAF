@@ -209,7 +209,8 @@ class BertED(nn.Module):
         num_heads = self.backbone.config.num_attention_heads
         return_dict = {}
 
-        if not self.uniform_expert:
+        #if not self.uniform_expert:
+        if True:
             with torch.no_grad():
                 with self.backbone.disable_adapter():
                     base_output = self.backbone(x, attention_mask=masks, return_dict=True)
