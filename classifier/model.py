@@ -221,7 +221,7 @@ class BertED(nn.Module):
            #gating_logits = self.gating_layer(cls_embedding)  (B, E)
             # Gating for token-level selection
             gating_logits = self.gating_layer(base_output.last_hidden_state)  # (B, L, E)
-            print(gating_logits.shape)
+            logger.info(f"Gating logits shape: {gating_logits.shape}")
 
             gating_weights = self.softmax(gating_logits)
             topk_weights, topk_indices = torch.topk(gating_weights, self.top_k, dim=-1)  # (B, k), (B, k)
