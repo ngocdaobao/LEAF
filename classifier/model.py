@@ -297,9 +297,9 @@ class BertED(nn.Module):
                 attn_expert = out.attentions[-1]  # (num_selected, 1, H)
 
                 expert_outputs[k][batch_idx, token_idx, :] = selected_weights.unsqueeze(-1) * _.squeeze(1)
-                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights * attn_expert.squeeze(1)
+                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights * attn_expert[batch_idx,:, token_idx, token_idx]
                 #expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.view(-1, 1, 1) * attn_expert.squeeze(1)
-
+                # attn_expert: (num_selected, num_heads, seq_len, seq_len)
 
         # Optional: add general expert
         if self.use_general_expert:
