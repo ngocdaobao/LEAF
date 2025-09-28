@@ -303,7 +303,7 @@ class BertED(nn.Module):
                 # attn_expert: (num_selected, num_heads, seq_len, seq_len)
                 # For each token, get the attention score for itself (diagonal)
                 self_attn = attn_expert[:, :, token_idx, token_idx]  # shape: (num_selected, num_heads)
-                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights * self_attn.unsqueeze(-1)
+                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.unsqueeze(-1) * self_attn
 
         # Optional: add general expert
         if self.use_general_expert:
