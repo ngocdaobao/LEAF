@@ -131,7 +131,8 @@ class BertED(nn.Module):
 
                 if args.gating == "softmax":
                     self.gating_layer = nn.Linear(self.input_dim, self.num_experts)
-                    self.softmax = nn.Softmax(dim=-1)
+                    #self.softmax = nn.Softmax(dim=-1) # instance-level
+                    self.softmax = nn.Softmax(dim=1) # token-level
                     logger.info("Gating: softmax")
                 elif args.gating == "tanh":
                     self.gating_layer = nn.Sequential(
@@ -208,6 +209,7 @@ class BertED(nn.Module):
         B, L = x.size(0), x.size(1)
         num_heads = self.backbone.config.num_attention_heads
         return_dict = {}
+        self.uniform_expert = False
 
         if not self.uniform_expert:
             with torch.no_grad():
@@ -223,10 +225,9 @@ class BertED(nn.Module):
             gating_logits = self.gating_layer(base_output.last_hidden_state)  # (B, L, E)
             logger.info(f"Gating logits shape: {gating_logits.shape}")
 
-            gating_weights = self.softmax(gating_logits)
-            topk_weights, topk_indices = torch.topk(gating_weights, self.top_k, dim=-1)  # (B, k), (B, k)
+            gating_weights = self.softmax(gating_logits) # (B, L, E)
+            topk_weights, topk_indices = torch.topk(gating_weights, self.top_k, dim=-1)  # (B, k), (B, k)  # (B,L,k) if token-level
             
-
 
             if train:
                 avg_weights = gating_weights.mean(dim=0)
@@ -296,8 +297,8 @@ class BertED(nn.Module):
                 attn_expert = out.attentions[-1]  # (num_selected, 1, H)
 
                 expert_outputs[k][batch_idx, token_idx, :] = selected_weights.unsqueeze(-1) * _.squeeze(1)
-                #expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.unsqueeze(-1).unsqueeze(-1) * attn_expert.squeeze(1)
-                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.view(-1, 1, 1) * attn_expert.squeeze(1)
+                expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.unsqueeze(-1)* attn_expert.squeeze(1)
+                #expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights.view(-1, 1, 1) * attn_expert.squeeze(1)
 
 
         # Optional: add general expert
