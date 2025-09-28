@@ -245,7 +245,8 @@ class BertED(nn.Module):
         for k in range(self.top_k):
             expert_ids = topk_indices[:,:, k]  # (B,), (B,L,) if token-level
             weights = topk_weights[:,:, k]     # (B,), (B,L,) if token-level
-
+           #expert_ids = topk_indices[:, k]
+           #weights = topk_weights[:, k]
         #     for expert_id in expert_ids.unique():
         #         mask = (expert_ids == expert_id)
         #         if mask.sum() == 0:
@@ -302,8 +303,8 @@ class BertED(nn.Module):
                 # attn_expert: (num_selected, num_heads, seq_len, seq_len)
                 # attn_expert: (num_selected, num_heads, seq_len, seq_len)
                 # For each token, get the attention score for itself (diagonal)
-                self_attn = attn_expert[:, :, token_idx, token_idx]  # shape: (num_selected, num_heads)
-                expert_outputs_attn[k][batch_idx, :, token_idx, :] = selected_weights * self_attn
+                #self_attn = attn_expert[:, :, token_idx, token_idx]  # shape: (num_selected, num_heads)
+                #expert_outputs_attn[k][batch_idx, :, token_idx, token_idx] = selected_weights * self_attn
 
         # Optional: add general expert
         if self.use_general_expert:
